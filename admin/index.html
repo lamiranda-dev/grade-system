@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GradeView — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:      #f5f2ee;
+  --paper:   #fdfcfa;
+  --ink:     #1a1714;
+  --ink2:    #6b6560;
+  --border:  #ddd9d3;
+  --accent:  #c8372d;
+  --pass:    #1a6b3c;
+  --pass-bg: #edfdf4;
+  --pass-bd: #b2e8cb;
+  --fail:    #8b1a1a;
+  --fail-bg: #fff0f0;
+  --fail-bd: #f5c0c0;
+  --sidebar: 220px;
+  --font:    'Outfit', sans-serif;
+  --mono:    'JetBrains Mono', monospace;
+}
+body { font-family: var(--font); background: var(--bg); min-height: 100vh; color: var(--ink); }
+
+/* ── Login ── */
+#loginScreen {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg);
+}
+.login-wrap {
+  width: 380px;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 44px 36px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+}
+.login-logo { font-size: 1.4rem; font-weight: 900; letter-spacing: -0.03em; margin-bottom: 4px; }
+.login-logo em { color: var(--accent); font-style: normal; }
+.login-sub { color: var(--ink2); font-size: 0.82rem; margin-bottom: 32px; }
+.fld { margin-bottom: 18px; }
+.fld label { display: block; font-family: var(--mono); font-size: 0.63rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink2); margin-bottom: 8px; }
+.fld input {
+  width: 100%; background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: 8px; padding: 13px 14px; font-family: var(--mono);
+  font-size: 0.9rem; color: var(--ink); outline: none; transition: border-color 0.2s;
+}
+.fld input:focus { border-color: var(--accent); }
+.btn-login {
+  width: 100%; background: var(--accent); color: #fff; border: none;
+  border-radius: 8px; padding: 14px; font-family: var(--font); font-size: 0.9rem;
+  font-weight: 700; cursor: pointer; margin-top: 4px; transition: background 0.15s;
+}
+.btn-login:hover { background: #a52d24; }
+.lerr {
+  display: none; margin-top: 14px; padding: 11px 14px; background: var(--fail-bg);
+  border: 1px solid var(--fail-bd); border-radius: 6px; color: var(--fail);
+  font-family: var(--mono); font-size: 0.75rem;
+}
+.lerr.show { display: block; }
+.back { display: block; text-align: center; margin-top: 18px; color: var(--ink2); font-size: 0.78rem; text-decoration: none; }
+.back:hover { color: var(--accent); }
+
+/* ── App ── */
+#app { display: none; height: 100vh; }
+.layout { display: flex; height: 100vh; }
+
+/* Sidebar */
+.sidebar {
+  width: var(--sidebar); background: var(--paper);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; flex-shrink: 0;
+}
+.sb-logo { padding: 22px 20px 18px; border-bottom: 1px solid var(--border); font-size: 1.05rem; font-weight: 900; letter-spacing: -0.02em; }
+.sb-logo em { color: var(--accent); font-style: normal; }
+.sb-role { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink2); margin-top: 3px; }
+nav { flex: 1; padding: 14px 10px; }
+.nav-btn {
+  display: flex; align-items: center; gap: 9px;
+  width: 100%; padding: 9px 11px; border-radius: 7px;
+  background: none; border: none; color: var(--ink2);
+  font-family: var(--font); font-size: 0.84rem; font-weight: 600;
+  cursor: pointer; transition: all 0.15s; text-align: left; margin-bottom: 2px;
+}
+.nav-btn:hover { background: var(--bg); color: var(--ink); }
+.nav-btn.active { background: rgba(200,55,45,0.07); color: var(--accent); }
+.sb-foot { padding: 16px; border-top: 1px solid var(--border); }
+.admin-nm { font-size: 0.8rem; font-weight: 600; margin-bottom: 10px; }
+.admin-nm small { display: block; color: var(--ink2); font-family: var(--mono); font-size: 0.65rem; margin-top: 2px; }
+.btn-out {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  color: var(--ink2); padding: 9px; border-radius: 7px;
+  font-family: var(--font); font-size: 0.8rem; cursor: pointer; transition: all 0.15s;
+}
+.btn-out:hover { background: var(--fail-bg); color: var(--fail); border-color: var(--fail-bd); }
+
+/* Content */
+.content { flex: 1; overflow-y: auto; }
+.page { display: none; padding: 36px; max-width: 960px; }
+.page.active { display: block; }
+.pg-title { font-size: 1.5rem; font-weight: 900; letter-spacing: -0.03em; margin-bottom: 4px; }
+.pg-sub { color: var(--ink2); font-size: 0.84rem; margin-bottom: 28px; }
+
+/* Alert */
+.alert {
+  display: none; padding: 11px 16px; border-radius: 8px;
+  font-family: var(--mono); font-size: 0.76rem; margin-bottom: 18px;
+}
+.alert.show { display: flex; align-items: center; gap: 8px; }
+.alert-ok  { background: var(--pass-bg); color: var(--pass); border: 1px solid var(--pass-bd); }
+.alert-err { background: var(--fail-bg); color: var(--fail); border: 1px solid var(--fail-bd); }
+
+/* Card */
+.card { background: var(--paper); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 24px; }
+.card-head {
+  padding: 14px 22px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+}
+.card-title { font-size: 0.85rem; font-weight: 700; }
+.card-body { padding: 24px; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: 7px;
+  font-family: var(--font); font-size: 0.8rem; font-weight: 700;
+  cursor: pointer; border: none; transition: all 0.15s;
+}
+.btn-pri  { background: var(--accent); color: #fff; }
+.btn-pri:hover { background: #a52d24; }
+.btn-sec  { background: var(--bg); border: 1px solid var(--border); color: var(--ink); }
+.btn-sec:hover { background: #ede9e3; }
+.btn-del  { background: var(--fail-bg); border: 1px solid var(--fail-bd); color: var(--fail); }
+.btn-del:hover { background: #fde0e0; }
+.btn-edit { background: rgba(200,55,45,0.07); border: 1px solid rgba(200,55,45,0.2); color: var(--accent); }
+.btn-edit:hover { background: rgba(200,55,45,0.14); }
+.btn-sm { padding: 5px 11px; font-size: 0.74rem; }
+
+/* Form */
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+.ff label { display: block; font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink2); margin-bottom: 7px; }
+.ff input {
+  width: 100%; background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: 8px; padding: 11px 13px; font-family: var(--mono);
+  font-size: 0.85rem; color: var(--ink); outline: none; transition: border-color 0.2s;
+}
+.ff input:focus { border-color: var(--accent); }
+.form-actions { display: flex; gap: 10px; margin-top: 20px; }
+
+/* Search bar */
+.sbar { display: flex; gap: 10px; }
+.sbar input {
+  background: var(--bg); border: 1.5px solid var(--border); border-radius: 7px;
+  padding: 8px 13px; font-family: var(--mono); font-size: 0.8rem; color: var(--ink);
+  outline: none; min-width: 240px; transition: border-color 0.2s;
+}
+.sbar input:focus { border-color: var(--accent); }
+
+/* Table */
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  padding: 11px 16px; text-align: left;
+  font-family: var(--mono); font-size: 0.61rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ink2); border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+tbody tr { border-bottom: 1px solid rgba(0,0,0,0.04); transition: background 0.1s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: rgba(0,0,0,0.015); }
+td { padding: 13px 16px; font-size: 0.86rem; vertical-align: middle; }
+.mono { font-family: var(--mono); font-size: 0.78rem; }
+.muted { color: var(--ink2); }
+
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 6px;
+  font-family: var(--mono); font-size: 0.68rem; font-weight: 600;
+}
+.b-pass { background: var(--pass-bg); color: var(--pass); border: 1px solid var(--pass-bd); }
+.b-fail { background: var(--fail-bg); color: var(--fail); border: 1px solid var(--fail-bd); }
+.bdot   { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+/* Stats */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 14px; margin-bottom: 28px; }
+.stat  { background: var(--paper); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+.sv    { font-family: var(--mono); font-size: 1.9rem; font-weight: 500; color: var(--accent); line-height: 1; margin-bottom: 7px; }
+.sl    { font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink2); }
+
+/* Modal */
+.overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45); z-index: 1000;
+  align-items: center; justify-content: center;
+}
+.overlay.open { display: flex; }
+.modal {
+  background: var(--paper); border: 1px solid var(--border);
+  border-radius: 16px; padding: 32px; width: 460px;
+  max-width: 95vw; position: relative;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.12);
+}
+.modal-title { font-size: 1.1rem; font-weight: 900; margin-bottom: 22px; letter-spacing: -0.02em; }
+.modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; color: var(--ink2); cursor: pointer; font-size: 1.1rem; }
+.modal-close:hover { color: var(--ink); }
+
+/* Pagination */
+.pgn { display: flex; gap: 6px; align-items: center; padding: 14px 16px; border-top: 1px solid var(--border); }
+.pg-btn {
+  width: 30px; height: 30px; border-radius: 6px; background: var(--bg);
+  border: 1px solid var(--border); font-family: var(--mono); font-size: 0.78rem;
+  cursor: pointer; color: var(--ink); transition: all 0.15s;
+}
+.pg-btn.active, .pg-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+.pg-info { color: var(--ink2); font-family: var(--mono); font-size: 0.72rem; margin-left: auto; }
+
+.empty { text-align: center; padding: 50px; color: var(--ink2); font-size: 0.85rem; }
+.spin { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(200,55,45,0.2); border-top-color: var(--accent); border-radius: 50%; animation: sp 0.6s linear infinite; }
+@keyframes sp { to { transform: rotate(360deg); } }
+
+/* ── Bulk Upload ── */
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  padding: 48px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--bg);
+  user-select: none;
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--accent);
+  background: rgba(200,55,45,0.03);
+}
+.upload-zone.has-file {
+  border-color: var(--pass);
+  border-style: solid;
+  background: rgba(26,107,60,0.03);
+}
+.upload-icon { font-size: 2.8rem; margin-bottom: 14px; line-height: 1; }
+.upload-hint { font-size: 0.88rem; color: var(--ink); font-weight: 600; margin-bottom: 6px; }
+.upload-hint em { color: var(--accent); font-style: normal; }
+.upload-sub  { font-size: 0.76rem; color: var(--ink2); font-family: var(--mono); }
+.upload-filename {
+  display: none;
+  align-items: center; gap: 8px;
+  margin-top: 16px;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--ink);
+  text-align: left;
+}
+.upload-filename.show { display: flex; }
+.fn-icon { font-size: 1.1rem; }
+.fn-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fn-clear { background: none; border: none; color: var(--ink2); cursor: pointer; font-size: 1rem; padding: 0 4px; }
+.fn-clear:hover { color: var(--fail); }
+
+.preview-wrap {
+  display: none;
+  margin-top: 24px;
+}
+.preview-wrap.show { display: block; }
+.preview-info {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px; flex-wrap: wrap; gap: 8px;
+}
+.preview-count { font-family: var(--mono); font-size: 0.76rem; color: var(--ink2); }
+.preview-scroll { overflow-x: auto; max-height: 280px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; }
+.preview-scroll table thead { position: sticky; top: 0; background: var(--paper); z-index: 1; }
+.err-list {
+  margin-top: 14px;
+  background: var(--fail-bg);
+  border: 1px solid var(--fail-bd);
+  border-radius: 8px;
+  padding: 14px 16px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+.err-list-title { font-size: 0.76rem; font-weight: 700; color: var(--fail); margin-bottom: 8px; font-family: var(--mono); }
+.err-list ul { list-style: none; }
+.err-list li { font-family: var(--mono); font-size: 0.72rem; color: var(--fail); padding: 3px 0; border-bottom: 1px solid rgba(139,26,26,0.08); }
+.err-list li:last-child { border-bottom: none; }
+.result-banner {
+  display: none;
+  border-radius: 10px;
+  padding: 18px 20px;
+  margin-top: 16px;
+  border: 1px solid;
+}
+.result-banner.show { display: flex; align-items: flex-start; gap: 14px; }
+.result-banner.ok  { background: var(--pass-bg); border-color: var(--pass-bd); }
+.result-banner.err { background: var(--fail-bg); border-color: var(--fail-bd); }
+.rb-icon  { font-size: 1.6rem; line-height: 1; }
+.rb-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; }
+.rb-body  { font-family: var(--mono); font-size: 0.75rem; color: var(--ink2); }
+.ok  .rb-title { color: var(--pass); }
+.err .rb-title { color: var(--fail); }
+.template-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+.template-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.05em;
+  color: var(--accent); background: none; border: 1px dashed rgba(200,55,45,0.3);
+  padding: 7px 13px; border-radius: 6px; cursor: pointer; transition: all 0.15s;
+}
+.template-btn:hover { background: rgba(200,55,45,0.06); border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="loginScreen">
+  <div class="login-wrap">
+    <div class="login-logo">Grade<em>View</em></div>
+    <div class="login-sub">Admin Portal — Secure Access</div>
+    <div class="fld"><label>Username</label><input type="text" id="lu" placeholder="admin" autocomplete="username"></div>
+    <div class="fld"><label>Password</label><input type="password" id="lp" placeholder="••••••••" autocomplete="current-password"></div>
+    <button class="btn-login" onclick="doLogin()">Sign In</button>
+    <div class="lerr" id="lerr"></div>
+    <a href="../index.html" class="back">← Student Portal</a>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app">
+ <div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sb-logo">Grade<em>View</em><div class="sb-role">Admin Panel</div></div>
+    <nav>
+      <button class="nav-btn active" onclick="pg('dashboard',this)">📊 Dashboard</button>
+      <button class="nav-btn" onclick="pg('grades',this)">📝 Grade Records</button>
+      <button class="nav-btn" onclick="pg('bulk',this)">📥 Bulk Upload</button>
+      <button class="nav-btn" onclick="pg('logs',this)">🔍 Audit Logs</button>
+    </nav>
+    <div class="sb-foot">
+      <div class="admin-nm" id="adminNm">Administrator<small>Admin</small></div>
+      <button class="btn-out" onclick="doLogout()">Sign Out</button>
+    </div>
+  </aside>
+
+  <div class="content">
+
+    <!-- Dashboard -->
+    <div class="page active" id="page-dashboard">
+      <div class="pg-title">Dashboard</div>
+      <div class="pg-sub">Overview of student grade records</div>
+      <div class="stats" id="dashStats">
+        <div class="stat"><div class="sv"><span class="spin"></span></div><div class="sl">Total Students</div></div>
+        <div class="stat"><div class="sv">—</div><div class="sl">Passed</div></div>
+        <div class="stat"><div class="sv">—</div><div class="sl">Failed</div></div>
+        <div class="stat"><div class="sv">—</div><div class="sl">Views Today</div></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="card-title">Recent Grade Views</span></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Student No.</th><th>Name</th><th>IP Address</th><th>Viewed At</th></tr></thead>
+            <tbody id="dashLogs"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Grade Records -->
+    <div class="page" id="page-grades">
+      <div class="pg-title">Grade Records</div>
+      <div class="pg-sub">Add, edit, and delete student grade records</div>
+      <div class="alert" id="gAlert"></div>
+
+      <!-- Add / Edit form -->
+      <div class="card">
+        <div class="card-head"><span class="card-title" id="formTitle">Add New Record</span></div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="ff"><label>Student Number *</label><input type="text" id="fNum" placeholder="2024-00001"></div>
+            <div class="ff"><label>Full Name *</label><input type="text" id="fName" placeholder="Juan dela Cruz"></div>
+            <div class="ff"><label>Final Grade * (1.00 – 5.00)</label><input type="number" id="fGrade" min="1" max="5" step="0.25" placeholder="1.75"></div>
+          </div>
+          <input type="hidden" id="fId">
+          <div class="form-actions">
+            <button class="btn btn-pri" onclick="saveRecord()">Save Record</button>
+            <button class="btn btn-sec" id="cancelBtn" onclick="cancelEdit()" style="display:none">Cancel Edit</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="card">
+        <div class="card-head">
+          <div class="sbar"><input type="text" id="gSearch" placeholder="Search name or student no…" oninput="searchRecords()"></div>
+          <span class="muted mono" id="gCount" style="font-size:0.75rem"></span>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Student No.</th><th>Full Name</th><th>Final Grade</th><th>Remarks</th><th>Last Updated</th><th>Actions</th></tr></thead>
+            <tbody id="gBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bulk Upload -->
+    <div class="page" id="page-bulk">
+      <div class="pg-title">Bulk Upload</div>
+      <div class="pg-sub">Import multiple student grades at once via CSV, XLS, or XLSX</div>
+
+      <!-- Result banner -->
+      <div class="result-banner" id="bulkResult">
+        <div class="rb-icon" id="brIcon"></div>
+        <div><div class="rb-title" id="brTitle"></div><div class="rb-body" id="brBody"></div></div>
+      </div>
+
+      <!-- Upload card -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Upload File</span>
+          <button class="template-btn" onclick="dlTemplate()">⬇ Download Template</button>
+        </div>
+        <div class="card-body">
+          <div class="upload-zone" id="dropZone"
+            onclick="document.getElementById('bulkFile').click()"
+            ondragover="onDragOver(event)"
+            ondragleave="onDragLeave(event)"
+            ondrop="onDrop(event)">
+            <div class="upload-icon" id="dropIcon">📂</div>
+            <div class="upload-hint"><em>Click to browse</em> or drag & drop your file here</div>
+            <div class="upload-sub">Accepted formats: .csv &nbsp;·&nbsp; .xls &nbsp;·&nbsp; .xlsx</div>
+          </div>
+          <input type="file" id="bulkFile" accept=".csv,.xls,.xlsx" style="display:none" onchange="onFileChosen(this.files[0])">
+
+          <div class="upload-filename" id="filenameBadge">
+            <span class="fn-icon">📄</span>
+            <span class="fn-name" id="fnText"></span>
+            <button class="fn-clear" onclick="clearFile(event)" title="Remove file">✕</button>
+          </div>
+
+          <!-- Preview -->
+          <div class="preview-wrap" id="previewWrap">
+            <div class="preview-info">
+              <span class="preview-count" id="previewCount"></span>
+              <button class="btn btn-sec btn-sm" onclick="clearFile()">Clear</button>
+            </div>
+            <div class="preview-scroll">
+              <table id="previewTable">
+                <thead id="previewHead"></thead>
+                <tbody id="previewBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="template-row">
+            <button class="btn btn-pri" id="uploadBtn" onclick="doUpload()" style="display:none">
+              ↑ Upload & Import
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Format guide -->
+      <div class="card">
+        <div class="card-head"><span class="card-title">Required Column Names</span></div>
+        <div class="card-body">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Column Header</th><th>Required</th><th>Example Value</th><th>Notes</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td class="mono">student_number</td>
+                  <td><span class="badge b-pass"><span class="bdot"></span>Required</span></td>
+                  <td class="mono muted">2024-00001</td>
+                  <td style="font-size:0.8rem;color:var(--ink2)">Unique per student</td>
+                </tr>
+                <tr>
+                  <td class="mono">full_name</td>
+                  <td><span class="badge b-pass"><span class="bdot"></span>Required</span></td>
+                  <td class="mono muted">Juan dela Cruz</td>
+                  <td style="font-size:0.8rem;color:var(--ink2)">Student's full name</td>
+                </tr>
+                <tr>
+                  <td class="mono">final_grade</td>
+                  <td><span class="badge b-pass"><span class="bdot"></span>Required</span></td>
+                  <td class="mono muted">1.75</td>
+                  <td style="font-size:0.8rem;color:var(--ink2)">1.00 – 5.00 · Passed if ≤ 3.00</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p style="margin-top:14px;font-size:0.78rem;color:var(--ink2);font-family:var(--mono)">
+            ⓘ &nbsp;If a student_number already exists, the record will be <strong>updated</strong>. New numbers will be <strong>inserted</strong>.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Audit Logs -->
+    <div class="page" id="page-logs">
+      <div class="pg-title">Audit Trail</div>
+      <div class="pg-sub">Every time a student viewed their grade</div>
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">View Logs</span>
+          <span class="muted mono" id="logTotal" style="font-size:0.75rem"></span>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Student No.</th><th>Student Name</th><th>IP Address</th><th>Date & Time</th></tr></thead>
+            <tbody id="logBody"></tbody>
+          </table>
+        </div>
+        <div class="pgn" id="logPgn"></div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+ </div>
+</div>
+
+<!-- Delete confirm modal -->
+<div class="overlay" id="delModal">
+  <div class="modal" style="max-width:360px;text-align:center">
+    <button class="modal-close" onclick="close('delModal')">✕</button>
+    <div style="font-size:2rem;margin-bottom:14px">🗑️</div>
+    <div class="modal-title" style="justify-content:center">Delete Record?</div>
+    <p style="color:var(--ink2);font-size:0.84rem;margin-bottom:24px">This will permanently remove the student's grade record.</p>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn btn-del" onclick="confirmDel()">Delete</button>
+      <button class="btn btn-sec" onclick="closeModal('delModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ── Vercel / JWT version ──────────────────────────────────────────────────────
+// Token is stored in localStorage instead of PHP sessions
+const API = '/api';
+let delId = null, logPage = 0;
+const LOG_LIMIT = 25;
+let searchT = null;
+let bulkFile = null;
+let bulkRows = [];
+
+// ── Token helpers ─────────────────────────────────────────────────────────────
+function getToken()       { return localStorage.getItem('gv_token'); }
+function setToken(t)      { localStorage.setItem('gv_token', t); }
+function clearToken()     { localStorage.removeItem('gv_token'); }
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+document.getElementById('lp').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+async function doLogin() {
+  const u = document.getElementById('lu').value.trim();
+  const p = document.getElementById('lp').value;
+  if (!u || !p) return lerr('Enter username and password.');
+  const r = await api('auth?action=login', 'POST', {username:u, password:p});
+  if (!r.success) return lerr(r.message);
+  setToken(r.data.token);
+  showApp(r.data.full_name);
+}
+function lerr(m) { const e=document.getElementById('lerr'); e.textContent=m; e.classList.add('show'); }
+function doLogout() { clearToken(); location.reload(); }
+
+function showApp(name) {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('adminNm').innerHTML = `${esc(name)}<small>Admin</small>`;
+  initApp();
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+function pg(name, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  btn.classList.add('active');
+  if (name==='logs')   loadLogs();
+  if (name==='grades') loadRecords();
+  if (name==='bulk')   hideBulkResult();
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+function initApp() { loadDashboard(); loadRecords(); }
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  const [recs, logs] = await Promise.all([
+    api('grades?action=list&q='),
+    api('grades?action=logs&limit=6&offset=0')
+  ]);
+  const data   = recs.success ? recs.data : [];
+  const passed = data.filter(r=>r.remarks==='Passed').length;
+  const failed = data.filter(r=>r.remarks==='Failed').length;
+  const total  = logs.success ? logs.data.total : 0;
+
+  document.getElementById('dashStats').innerHTML = `
+    <div class="stat"><div class="sv">${data.length}</div><div class="sl">Total Students</div></div>
+    <div class="stat"><div class="sv" style="color:var(--pass)">${passed}</div><div class="sl">Passed</div></div>
+    <div class="stat"><div class="sv" style="color:var(--fail)">${failed}</div><div class="sl">Failed</div></div>
+    <div class="stat"><div class="sv" style="color:var(--ink2)">${total}</div><div class="sl">Total Views</div></div>
+  `;
+  const lg = logs.success ? logs.data.logs : [];
+  document.getElementById('dashLogs').innerHTML = lg.map(l=>`
+    <tr>
+      <td class="mono">${esc(l.student_number)}</td>
+      <td>${esc(l.student_name)}</td>
+      <td class="mono muted">${esc(l.ip_address)}</td>
+      <td class="muted" style="font-family:var(--mono);font-size:0.76rem">${fmtDate(l.viewed_at)}</td>
+    </tr>`).join('') || emptyRow(4,'No views yet.');
+}
+
+// ── Grade Records ─────────────────────────────────────────────────────────────
+async function loadRecords(q='') {
+  const r = await api(`grades?action=list&q=${encodeURIComponent(q)}`);
+  if (!r.success) return;
+  const rows = r.data;
+  document.getElementById('gCount').textContent = rows.length + ' record' + (rows.length!==1?'s':'');
+  document.getElementById('gBody').innerHTML = rows.map(row=>`
+    <tr>
+      <td class="mono">${esc(row.student_number)}</td>
+      <td><strong>${esc(row.full_name)}</strong></td>
+      <td><span class="mono" style="font-size:0.9rem;color:${row.remarks==='Passed'?'var(--pass)':'var(--fail)'}">${parseFloat(row.final_grade).toFixed(2)}</span></td>
+      <td><span class="badge ${row.remarks==='Passed'?'b-pass':'b-fail'}"><span class="bdot"></span>${esc(row.remarks)}</span></td>
+      <td class="muted" style="font-family:var(--mono);font-size:0.74rem">${fmtDate(row.updated_at)}</td>
+      <td style="display:flex;gap:6px;padding:10px 16px">
+        <button class="btn btn-edit btn-sm" onclick='editRecord(${JSON.stringify(row)})'>Edit</button>
+        <button class="btn btn-del btn-sm" onclick="askDel(${row.id})">Delete</button>
+      </td>
+    </tr>`).join('') || emptyRow(6,'No records yet.');
+}
+
+function searchRecords() {
+  clearTimeout(searchT);
+  searchT = setTimeout(()=>loadRecords(document.getElementById('gSearch').value), 300);
+}
+
+async function saveRecord() {
+  const id    = document.getElementById('fId').value;
+  const snum  = document.getElementById('fNum').value.trim();
+  const name  = document.getElementById('fName').value.trim();
+  const grade = document.getElementById('fGrade').value;
+  if (!snum||!name||!grade) return alert('All fields are required.');
+  if (grade<1||grade>5) return alert('Grade must be between 1.00 and 5.00.');
+  const body = { student_number:snum, full_name:name, final_grade:grade };
+  if (id) body.id = parseInt(id);
+  const r = await api('grades?action=save', 'POST', body);
+  if (r.success) {
+    showAlert('gAlert','ok','✓ ' + r.message);
+    cancelEdit(); loadRecords(); loadDashboard();
+  } else showAlert('gAlert','err', r.message||'Error saving record.');
+}
+
+function editRecord(row) {
+  document.getElementById('fId').value    = row.id;
+  document.getElementById('fNum').value   = row.student_number;
+  document.getElementById('fName').value  = row.full_name;
+  document.getElementById('fGrade').value = parseFloat(row.final_grade).toFixed(2);
+  document.getElementById('formTitle').textContent = 'Edit Record';
+  document.getElementById('cancelBtn').style.display = 'inline-flex';
+  document.getElementById('fNum').scrollIntoView({ behavior:'smooth' });
+}
+
+function cancelEdit() {
+  ['fId','fNum','fName','fGrade'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('formTitle').textContent = 'Add New Record';
+  document.getElementById('cancelBtn').style.display = 'none';
+}
+
+function askDel(id) { delId=id; openModal('delModal'); }
+async function confirmDel() {
+  const r = await api(`grades?id=${delId}`, 'DELETE');
+  closeModal('delModal');
+  if (r.success) { loadRecords(); loadDashboard(); showAlert('gAlert','ok','✓ Record deleted.'); }
+  else showAlert('gAlert','err', r.message||'Error deleting.');
+}
+
+// ── Logs ──────────────────────────────────────────────────────────────────────
+async function loadLogs() {
+  const r = await api(`grades?action=logs&limit=${LOG_LIMIT}&offset=${logPage*LOG_LIMIT}`);
+  if (!r.success) return;
+  const { logs, total } = r.data;
+  document.getElementById('logTotal').textContent = total + ' total records';
+  document.getElementById('logBody').innerHTML = logs.map(l=>`
+    <tr>
+      <td class="mono">${esc(l.student_number)}</td>
+      <td>${esc(l.student_name)}</td>
+      <td class="mono muted">${esc(l.ip_address)}</td>
+      <td class="muted" style="font-family:var(--mono);font-size:0.76rem">${fmtDate(l.viewed_at)}</td>
+    </tr>`).join('') || emptyRow(4,'No logs yet.');
+  const pages = Math.ceil(total/LOG_LIMIT)||1;
+  let pgn='';
+  for(let i=0;i<pages;i++) pgn+=`<button class="pg-btn ${i===logPage?'active':''}" onclick="logPage=${i};loadLogs()">${i+1}</button>`;
+  pgn += `<span class="pg-info">Page ${logPage+1} of ${pages}</span>`;
+  document.getElementById('logPgn').innerHTML = pgn;
+}
+
+// ── Bulk Upload ───────────────────────────────────────────────────────────────
+function onDragOver(e) { e.preventDefault(); document.getElementById('dropZone').classList.add('drag-over'); }
+function onDragLeave(e) { document.getElementById('dropZone').classList.remove('drag-over'); }
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f) onFileChosen(f);
+}
+
+function onFileChosen(file) {
+  if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['csv','xls','xlsx'].includes(ext)) return alert('Please choose a CSV, XLS, or XLSX file.');
+  bulkFile = file;
+  document.getElementById('fnText').textContent = file.name + '  (' + (file.size/1024).toFixed(1) + ' KB)';
+  document.getElementById('filenameBadge').classList.add('show');
+  document.getElementById('dropZone').classList.add('has-file');
+  document.getElementById('dropIcon').textContent = '✅';
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb   = XLSX.read(e.target.result, { type:'binary' });
+      const ws   = wb.Sheets[wb.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(ws, { defval:'' });
+      bulkRows   = data;
+      renderPreview(data);
+    } catch(err) { alert('Could not read file: ' + err.message); }
+  };
+  reader.readAsBinaryString(file);
+}
+
+function renderPreview(rows) {
+  if (!rows.length) return;
+  const cols = Object.keys(rows[0]);
+  document.getElementById('previewHead').innerHTML = '<tr>'+cols.map(c=>`<th>${esc(c)}</th>`).join('')+'</tr>';
+  document.getElementById('previewBody').innerHTML = rows.slice(0,8).map(r=>'<tr>'+cols.map(c=>`<td class="mono" style="font-size:0.75rem">${esc(r[c])}</td>`).join('')+'</tr>').join('');
+  document.getElementById('previewCount').textContent = rows.length+' row'+(rows.length!==1?'s':'')+' found'+(rows.length>8?' · showing first 8':'');
+  document.getElementById('previewWrap').classList.add('show');
+  document.getElementById('uploadBtn').style.display = 'inline-flex';
+  hideBulkResult();
+}
+
+async function doUpload() {
+  if (!bulkFile) return;
+  const btn = document.getElementById('uploadBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Uploading…';
+  hideBulkResult();
+  const fd = new FormData();
+  fd.append('file', bulkFile);
+  try {
+    const res  = await fetch(`${API}/bulk`, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + getToken() },
+      body: fd
+    });
+    const json = await res.json();
+    if (json.success) {
+      const d = json.data;
+      showBulkResult('ok', `✓ Import complete — ${d.inserted} added, ${d.updated} updated`, d.errors.length ? d.errors : null);
+      clearFile(); loadRecords(); loadDashboard();
+    } else showBulkResult('err', 'Upload failed', [json.message]);
+  } catch(e) {
+    showBulkResult('err', 'Connection error', [e.message]);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '↑ Upload & Import';
+  }
+}
+
+function clearFile(e) {
+  if (e) e.stopPropagation();
+  bulkFile = null; bulkRows = [];
+  document.getElementById('bulkFile').value = '';
+  document.getElementById('filenameBadge').classList.remove('show');
+  document.getElementById('dropZone').classList.remove('has-file','drag-over');
+  document.getElementById('dropIcon').textContent = '📂';
+  document.getElementById('previewWrap').classList.remove('show');
+  document.getElementById('uploadBtn').style.display = 'none';
+}
+
+function showBulkResult(type, title, errors) {
+  const el = document.getElementById('bulkResult');
+  el.className = 'result-banner show ' + type;
+  document.getElementById('brIcon').textContent  = type==='ok' ? '✅' : '❌';
+  document.getElementById('brTitle').textContent = title;
+  const body = document.getElementById('brBody');
+  body.innerHTML = errors && errors.length ? errors.map(e=>`<div style="margin-top:4px">• ${esc(e)}</div>`).join('') : '';
+  el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+function hideBulkResult() { document.getElementById('bulkResult').className = 'result-banner'; }
+
+function dlTemplate() {
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([
+    ['student_number','full_name','final_grade'],
+    ['2024-00001','Maria Santos',1.50],
+    ['2024-00002','Juan dela Cruz',2.75],
+    ['2024-00003','Ana Reyes',3.00],
+    ['2024-00004','Pedro Garcia',5.00],
+  ]);
+  ws['!cols'] = [{wch:18},{wch:25},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Grades');
+  XLSX.writeFile(wb, 'grade_upload_template.xlsx');
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+async function api(path, method='GET', body=null) {
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    const token = getToken();
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+    const opts = { method, headers };
+    if (body) opts.body = JSON.stringify(body);
+    const r = await fetch(`${API}/${path}`, opts);
+    if (r.status === 401) { clearToken(); location.reload(); }
+    return await r.json();
+  } catch { return { success:false, message:'Connection error.' }; }
+}
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function showAlert(id, type, msg) {
+  const el = document.getElementById(id);
+  el.className = `alert alert-${type==='ok'?'ok':'err'} show`;
+  el.textContent = msg;
+  setTimeout(()=>el.classList.remove('show'), 4000);
+}
+function emptyRow(c,m) { return `<tr><td colspan="${c}" class="empty">${m}</td></tr>`; }
+function fmtDate(dt) { return new Date(dt).toLocaleString('en-PH',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }
+function esc(s) { const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
+
+document.querySelectorAll('.overlay').forEach(el=>el.addEventListener('click',e=>{ if(e.target===el) el.classList.remove('open'); }));
+
+// Check stored token on load
+(async()=>{
+  const token = getToken();
+  if (!token) return;
+  const r = await api('auth?action=check');
+  if (r.success) showApp(r.data.full_name);
+  else clearToken();
+})();
+</script>
+</body>
+</html>

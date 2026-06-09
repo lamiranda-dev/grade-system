@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GradeView — Check Your Grade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #f5f2ee;
+  --paper:   #fdfcfa;
+  --ink:     #1a1714;
+  --ink2:    #6b6560;
+  --border:  #ddd9d3;
+  --pass:    #1a6b3c;
+  --pass-bg: #edfdf4;
+  --pass-bd: #b2e8cb;
+  --fail:    #8b1a1a;
+  --fail-bg: #fff0f0;
+  --fail-bd: #f5c0c0;
+  --accent:  #c8372d;
+  --font:    'Outfit', sans-serif;
+  --mono:    'JetBrains Mono', monospace;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Subtle texture overlay */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='1' height='1' fill='%23c8b49a' opacity='0.15'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 40px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--border);
+  position: relative; z-index: 1;
+}
+.logo {
+  font-size: 1.1rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+.logo em { color: var(--accent); font-style: normal; }
+.admin-btn {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink2);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  padding: 7px 14px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+.admin-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  position: relative; z-index: 1;
+}
+
+.container { width: 100%; max-width: 480px; }
+
+/* School seal / header */
+.seal {
+  text-align: center;
+  margin-bottom: 40px;
+  animation: rise 0.5s ease both;
+}
+.seal-ring {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px; height: 64px;
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  font-size: 1.6rem;
+  margin-bottom: 16px;
+  background: var(--paper);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.seal h1 {
+  font-size: 1.6rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.seal p { font-size: 0.85rem; color: var(--ink2); }
+
+/* Search card */
+.card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.04);
+  animation: rise 0.5s ease 0.08s both;
+}
+.field-label {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink2);
+  display: block;
+  margin-bottom: 10px;
+}
+.input-row { display: flex; gap: 10px; }
+input[type="text"] {
+  flex: 1;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  color: var(--ink);
+  background: var(--bg);
+  outline: none;
+  transition: border-color 0.2s;
+  letter-spacing: 0.04em;
+}
+input[type="text"]:focus { border-color: var(--accent); background: #fff; }
+input[type="text"]::placeholder { color: #bbb; }
+.btn-search {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 14px 24px;
+  font-family: var(--font);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  letter-spacing: 0.02em;
+}
+.btn-search:hover { background: #a52d24; }
+.btn-search:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.err {
+  display: none;
+  margin-top: 14px;
+  padding: 11px 14px;
+  background: var(--fail-bg);
+  border: 1px solid var(--fail-bd);
+  border-radius: 6px;
+  color: var(--fail);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+}
+.err.show { display: block; }
+
+/* Result card */
+#result {
+  display: none;
+  margin-top: 20px;
+  animation: rise 0.4s ease both;
+}
+
+.result-card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+}
+.result-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.result-name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+.result-num {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--ink2);
+  margin-top: 4px;
+  letter-spacing: 0.05em;
+}
+.result-body {
+  padding: 28px 24px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.grade-display {
+  text-align: center;
+  min-width: 110px;
+}
+.grade-number {
+  font-family: var(--mono);
+  font-size: 3rem;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.grade-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink2);
+  margin-top: 6px;
+}
+.divider {
+  width: 1px;
+  height: 60px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+.remarks-block { flex: 1; }
+.remarks-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border: 1.5px solid;
+}
+.remarks-pass {
+  background: var(--pass-bg);
+  color: var(--pass);
+  border-color: var(--pass-bd);
+}
+.remarks-fail {
+  background: var(--fail-bg);
+  color: var(--fail);
+  border-color: var(--fail-bd);
+}
+.remarks-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.remarks-desc { font-size: 0.78rem; color: var(--ink2); margin-top: 10px; }
+
+.result-footer {
+  padding: 12px 24px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--ink2);
+  letter-spacing: 0.05em;
+}
+
+/* Spinner */
+.spin {
+  display: inline-block;
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+
+@keyframes rise { from { opacity:0; transform: translateY(16px); } to { opacity:1; transform: none; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+footer {
+  text-align: center;
+  padding: 20px;
+  color: var(--ink2);
+  font-size: 0.75rem;
+  position: relative; z-index: 1;
+  border-top: 1px solid var(--border);
+  font-family: var(--mono);
+  letter-spacing: 0.05em;
+}
+
+@media (max-width: 500px) {
+  header { padding: 16px 20px; }
+  .card { padding: 24px 20px; }
+  .result-body { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .divider { width: 100%; height: 1px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Grade<em>View</em></div>
+  <a href="admin/" class="admin-btn">Admin →</a>
+</header>
+
+<main>
+  <div class="container">
+
+    <div class="seal">
+      <div class="seal-ring">🎓</div>
+      <h1>Check Your Grade</h1>
+      <p>Enter your student number to view your final grade.</p>
+    </div>
+
+    <div class="card">
+      <label class="field-label" for="snum">Student Number</label>
+      <div class="input-row">
+        <input type="text" id="snum" placeholder="e.g. 2024-00001" autocomplete="off" spellcheck="false">
+        <button class="btn-search" id="searchBtn" onclick="lookup()">View Grade</button>
+      </div>
+      <div class="err" id="errBox"></div>
+    </div>
+
+    <div id="result">
+      <div class="result-card">
+        <div class="result-header">
+          <div>
+            <div class="result-name" id="resName"></div>
+            <div class="result-num" id="resNum"></div>
+          </div>
+        </div>
+        <div class="result-body">
+          <div class="grade-display">
+            <div class="grade-number" id="resGrade"></div>
+            <div class="grade-label">Final Grade</div>
+          </div>
+          <div class="divider"></div>
+          <div class="remarks-block">
+            <div class="remarks-badge" id="resBadge">
+              <span class="remarks-dot"></span>
+              <span id="resRemarks"></span>
+            </div>
+            <div class="remarks-desc" id="resDesc"></div>
+          </div>
+        </div>
+        <div class="result-footer" id="resTime"></div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>GradeView Student Portal &nbsp;·&nbsp; For concerns contact the Registrar's Office</footer>
+
+<script>
+document.getElementById('snum').addEventListener('keydown', e => { if (e.key === 'Enter') lookup(); });
+
+async function lookup() {
+  const num = document.getElementById('snum').value.trim();
+  if (!num) return showErr('Please enter your student number.');
+
+  const btn = document.getElementById('searchBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>Loading…';
+  hideErr();
+  document.getElementById('result').style.display = 'none';
+
+  try {
+    const res  = await fetch('/api/lookup?student_number=' + encodeURIComponent(num));
+    const json = await res.json();
+    if (!json.success) { showErr(json.message); return; }
+    render(json.data);
+  } catch { showErr('Connection error. Please try again.'); }
+  finally {
+    btn.disabled = false;
+    btn.textContent = 'View Grade';
+  }
+}
+
+function render(d) {
+  const grade = parseFloat(d.final_grade).toFixed(2);
+  const pass  = d.remarks === 'Passed';
+
+  document.getElementById('resName').textContent  = d.full_name;
+  document.getElementById('resNum').textContent   = d.student_number;
+  document.getElementById('resGrade').textContent = grade;
+  document.getElementById('resGrade').style.color = pass ? 'var(--pass)' : 'var(--fail)';
+
+  const badge = document.getElementById('resBadge');
+  badge.className = 'remarks-badge ' + (pass ? 'remarks-pass' : 'remarks-fail');
+  document.getElementById('resRemarks').textContent = d.remarks;
+  document.getElementById('resDesc').textContent    = pass
+    ? 'Congratulations! You have passed.'
+    : 'You did not meet the passing requirement.';
+
+  document.getElementById('resTime').textContent = 'Viewed on ' + new Date().toLocaleString('en-PH', {
+    year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit'
+  });
+
+  document.getElementById('result').style.display = 'block';
+}
+
+function showErr(m) { const e = document.getElementById('errBox'); e.textContent = m; e.classList.add('show'); }
+function hideErr()  { document.getElementById('errBox').classList.remove('show'); }
+</script>
+</body>
+</html>
